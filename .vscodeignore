@@ -1,0 +1,12 @@
+**
+!dist/extension.js
+!dist/extension.js.map
+!dist/relay.js
+!media/**
+!README.md
+!LICENSE
+!SECURITY.md
+!PRIVACY.md
+!THREAT_MODEL.md
+!CHANGELOG.md
+!package.json

@@ -1,0 +1,552 @@
+{
+  "name": "coding-plus-for-claude-code",
+  "displayName": "Coding Plus for Claude Code",
+  "description": "Copilot-style inline diff review, changed-files panel, Add to Chat, audit log and secret guard for Claude Code. Local-only: no network, no telemetry.",
+  "version": "0.1.0",
+  "publisher": "christhese",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/chrisTheSE/Coding-Plus-for-Claude-Code.git"
+  },
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Other",
+    "SCM Providers"
+  ],
+  "keywords": [
+    "claude",
+    "claude code",
+    "diff",
+    "review",
+    "audit"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Reviewing changes works everywhere. Installing Claude Code hooks requires a trusted workspace.",
+      "restrictedConfigurations": [
+        "claudeReview.hookCommand"
+      ]
+    },
+    "virtualWorkspaces": false
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "claudeReview.keepHunk",
+        "title": "Keep Change",
+        "category": "Claude Review",
+        "icon": "$(check)"
+      },
+      {
+        "command": "claudeReview.undoHunk",
+        "title": "Undo Change",
+        "category": "Claude Review",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "claudeReview.keepFile",
+        "title": "Keep All Changes in File",
+        "category": "Claude Review",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "claudeReview.undoFile",
+        "title": "Undo All Changes in File",
+        "category": "Claude Review",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "claudeReview.keepAll",
+        "title": "Keep All Changes",
+        "category": "Claude Review",
+        "icon": "$(check-all)"
+      },
+      {
+        "command": "claudeReview.undoAll",
+        "title": "Undo All Changes",
+        "category": "Claude Review",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "claudeReview.openDiff",
+        "title": "Open Side-by-Side Diff",
+        "category": "Claude Review",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "claudeReview.nextHunk",
+        "title": "Go to Next Claude Change",
+        "category": "Claude Review",
+        "icon": "$(arrow-down)"
+      },
+      {
+        "command": "claudeReview.prevHunk",
+        "title": "Go to Previous Claude Change",
+        "category": "Claude Review",
+        "icon": "$(arrow-up)"
+      },
+      {
+        "command": "claudeReview.keepHunkAtCursor",
+        "title": "Keep Change at Cursor",
+        "category": "Claude Review"
+      },
+      {
+        "command": "claudeReview.undoHunkAtCursor",
+        "title": "Undo Change at Cursor",
+        "category": "Claude Review"
+      },
+      {
+        "command": "claudeReview.addToChat",
+        "title": "Add to Claude Chat",
+        "category": "Claude Review",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "claudeReview.addSelectionToChat",
+        "title": "Add Selection to Claude Chat",
+        "category": "Claude Review"
+      },
+      {
+        "command": "claudeReview.installHooks",
+        "title": "Install Claude Code Hooks…",
+        "category": "Claude Review"
+      },
+      {
+        "command": "claudeReview.uninstallHooks",
+        "title": "Uninstall Claude Code Hooks…",
+        "category": "Claude Review"
+      },
+      {
+        "command": "claudeReview.copyManagedSettingsSnippet",
+        "title": "Copy Managed-Settings Hook Snippet (for IT admins)",
+        "category": "Claude Review"
+      },
+      {
+        "command": "claudeReview.verifyAuditLog",
+        "title": "Verify Audit Log Integrity",
+        "category": "Claude Review"
+      },
+      {
+        "command": "claudeReview.exportAuditLog",
+        "title": "Export Audit Log…",
+        "category": "Claude Review"
+      },
+      {
+        "command": "claudeReview.openDataFolder",
+        "title": "Open Local Data Folder",
+        "category": "Claude Review"
+      },
+      {
+        "command": "claudeReview.clearAll",
+        "title": "Stop Tracking All Changes (keep files as they are)",
+        "category": "Claude Review",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "claudeReview.refreshContextMeter",
+        "title": "Refresh Context Usage",
+        "category": "Claude Review"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "claudeReview",
+          "title": "Claude Review",
+          "icon": "media/review.svg"
+        }
+      ]
+    },
+    "views": {
+      "claudeReview": [
+        {
+          "id": "claudeReview.changes",
+          "name": "Changes",
+          "icon": "media/review.svg"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "claudeReview.changes",
+        "contents": "No Claude changes to review.\nEdits Claude makes in this workspace will appear here with inline green/red diffs.\n[Install Claude Code Hooks](command:claudeReview.installHooks)\nHooks are required so edits can be captured. Everything stays on this machine.",
+        "when": "!claudeReview.hooksInstalled"
+      },
+      {
+        "view": "claudeReview.changes",
+        "contents": "No Claude changes to review.\nEdits Claude makes in this workspace will appear here. Drop files here to add them to Claude chat.",
+        "when": "claudeReview.hooksInstalled"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "claudeReview.keepAll",
+          "when": "view == claudeReview.changes && claudeReview.hasChanges",
+          "group": "navigation@1"
+        },
+        {
+          "command": "claudeReview.undoAll",
+          "when": "view == claudeReview.changes && claudeReview.hasChanges",
+          "group": "navigation@2"
+        },
+        {
+          "command": "claudeReview.clearAll",
+          "when": "view == claudeReview.changes && claudeReview.hasChanges",
+          "group": "1_more"
+        },
+        {
+          "command": "claudeReview.installHooks",
+          "when": "view == claudeReview.changes",
+          "group": "2_setup@1"
+        },
+        {
+          "command": "claudeReview.uninstallHooks",
+          "when": "view == claudeReview.changes",
+          "group": "2_setup@2"
+        },
+        {
+          "command": "claudeReview.verifyAuditLog",
+          "when": "view == claudeReview.changes",
+          "group": "3_audit@1"
+        },
+        {
+          "command": "claudeReview.exportAuditLog",
+          "when": "view == claudeReview.changes",
+          "group": "3_audit@2"
+        },
+        {
+          "command": "claudeReview.openDataFolder",
+          "when": "view == claudeReview.changes",
+          "group": "3_audit@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "claudeReview.openDiff",
+          "when": "view == claudeReview.changes && viewItem == file",
+          "group": "inline@1"
+        },
+        {
+          "command": "claudeReview.keepFile",
+          "when": "view == claudeReview.changes && viewItem == file",
+          "group": "inline@2"
+        },
+        {
+          "command": "claudeReview.undoFile",
+          "when": "view == claudeReview.changes && viewItem == file",
+          "group": "inline@3"
+        },
+        {
+          "command": "claudeReview.keepHunk",
+          "when": "view == claudeReview.changes && viewItem == hunk",
+          "group": "inline@1"
+        },
+        {
+          "command": "claudeReview.undoHunk",
+          "when": "view == claudeReview.changes && viewItem == hunk",
+          "group": "inline@2"
+        },
+        {
+          "command": "claudeReview.addToChat",
+          "when": "view == claudeReview.changes",
+          "group": "1_chat"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "claudeReview.addToChat",
+          "group": "claude@1"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "claudeReview.addToChat",
+          "group": "claude@1"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "claudeReview.addSelectionToChat",
+          "when": "editorHasSelection",
+          "group": "claude@1"
+        },
+        {
+          "command": "claudeReview.addToChat",
+          "when": "!editorHasSelection",
+          "group": "claude@1"
+        },
+        {
+          "command": "claudeReview.keepHunkAtCursor",
+          "when": "claudeReview.activeFileHasChanges",
+          "group": "claude@2"
+        },
+        {
+          "command": "claudeReview.undoHunkAtCursor",
+          "when": "claudeReview.activeFileHasChanges",
+          "group": "claude@3"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "claudeReview.prevHunk",
+          "when": "claudeReview.activeFileHasChanges",
+          "group": "navigation@90"
+        },
+        {
+          "command": "claudeReview.nextHunk",
+          "when": "claudeReview.activeFileHasChanges",
+          "group": "navigation@91"
+        },
+        {
+          "command": "claudeReview.keepFile",
+          "when": "claudeReview.activeFileHasChanges",
+          "group": "navigation@92"
+        },
+        {
+          "command": "claudeReview.undoFile",
+          "when": "claudeReview.activeFileHasChanges",
+          "group": "navigation@93"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "claudeReview.keepHunk",
+          "when": "false"
+        },
+        {
+          "command": "claudeReview.undoHunk",
+          "when": "false"
+        },
+        {
+          "command": "claudeReview.openDiff",
+          "when": "claudeReview.activeFileHasChanges"
+        },
+        {
+          "command": "claudeReview.keepFile",
+          "when": "claudeReview.activeFileHasChanges"
+        },
+        {
+          "command": "claudeReview.undoFile",
+          "when": "claudeReview.activeFileHasChanges"
+        },
+        {
+          "command": "claudeReview.nextHunk",
+          "when": "claudeReview.activeFileHasChanges"
+        },
+        {
+          "command": "claudeReview.prevHunk",
+          "when": "claudeReview.activeFileHasChanges"
+        },
+        {
+          "command": "claudeReview.keepHunkAtCursor",
+          "when": "claudeReview.activeFileHasChanges"
+        },
+        {
+          "command": "claudeReview.undoHunkAtCursor",
+          "when": "claudeReview.activeFileHasChanges"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "claudeReview.nextHunk",
+        "key": "alt+f5",
+        "when": "editorTextFocus && claudeReview.activeFileHasChanges"
+      },
+      {
+        "command": "claudeReview.prevHunk",
+        "key": "shift+alt+f5",
+        "when": "editorTextFocus && claudeReview.activeFileHasChanges"
+      },
+      {
+        "command": "claudeReview.keepHunkAtCursor",
+        "key": "ctrl+alt+y",
+        "mac": "cmd+alt+y",
+        "when": "editorTextFocus && claudeReview.activeFileHasChanges"
+      },
+      {
+        "command": "claudeReview.undoHunkAtCursor",
+        "key": "ctrl+alt+n",
+        "mac": "cmd+alt+n",
+        "when": "editorTextFocus && claudeReview.activeFileHasChanges"
+      }
+    ],
+    "configuration": {
+      "title": "Coding Plus for Claude Code",
+      "properties": {
+        "claudeReview.inlineDiff.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Highlight Claude's changes inline (green = added, red = removed) in the editor."
+        },
+        "claudeReview.codeLens.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show Keep / Undo / Diff actions above each changed hunk."
+        },
+        "claudeReview.trackBashEdits": {
+          "type": "boolean",
+          "default": true,
+          "description": "After Claude runs shell commands, detect files they modified (git repos only) and add them for review with git HEAD as the baseline."
+        },
+        "claudeReview.addToChat.method": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "mention",
+            "paste",
+            "terminal"
+          ],
+          "enumDescriptions": [
+            "Use Claude Code's @-mention command for single files, and paste for folders/multi-select.",
+            "Always use Claude Code's @-mention command (opens each file).",
+            "Always focus the Claude input and paste @-mentions.",
+            "Type the @-mentions into the active terminal (for the claude CLI)."
+          ],
+          "default": "auto",
+          "description": "How 'Add to Claude Chat' delivers @-mentions to the official Claude Code chat."
+        },
+        "claudeReview.secretGuard.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Block Claude from reading or editing files that match sensitive patterns (enforced by the hook, logged to the audit log).",
+          "scope": "application",
+          "markdownDescription": "Block Claude from reading or editing files that match sensitive patterns (enforced by the hook, logged to the audit log). *User-level only, so a cloned repository cannot weaken it.*"
+        },
+        "claudeReview.secretGuard.action": {
+          "type": "string",
+          "enum": [
+            "deny",
+            "ask"
+          ],
+          "default": "deny",
+          "description": "Deny the tool call outright, or ask you to confirm in Claude Code.",
+          "scope": "application"
+        },
+        "claudeReview.secretGuard.patterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            ".env",
+            ".env.*",
+            "*.pem",
+            "*.key",
+            "*.pfx",
+            "*.p12",
+            "*.jks",
+            "*.keystore",
+            "id_rsa*",
+            "id_ecdsa*",
+            "id_ed25519*",
+            "id_dsa*",
+            ".npmrc",
+            ".pypirc",
+            ".netrc",
+            "credentials",
+            "credentials.json",
+            "**/.aws/**",
+            "**/.ssh/**",
+            "**/secrets/**",
+            "*.tfstate",
+            "*.tfvars"
+          ],
+          "description": "Glob patterns (matched against file name and workspace-relative path) that Claude may not read or edit.",
+          "scope": "application"
+        },
+        "claudeReview.secretGuard.allowPatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            ".env.example",
+            ".env.sample",
+            ".env.template",
+            "*.pub"
+          ],
+          "description": "Exceptions to the sensitive patterns.",
+          "scope": "application"
+        },
+        "claudeReview.audit.recordPrompts": {
+          "type": "boolean",
+          "default": true,
+          "description": "Store your prompt text in the local audit log (otherwise only a SHA-256 hash is stored).",
+          "scope": "application"
+        },
+        "claudeReview.retentionDays": {
+          "type": "number",
+          "default": 30,
+          "minimum": 1,
+          "description": "Delete local file snapshots older than this many days (snapshots still needed for pending reviews are kept). The audit log itself is never deleted automatically.",
+          "scope": "application"
+        },
+        "claudeReview.hookCommand": {
+          "type": "string",
+          "default": "",
+          "description": "Override the command used to run the hook relay (advanced). Leave empty to auto-detect Node.js.",
+          "scope": "application"
+        },
+        "claudeReview.contextMeter.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a pie icon in the status bar with the current Claude session's context usage (hover for details)."
+        },
+        "claudeReview.contextMeter.showPercent": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show the percentage next to the pie icon."
+        },
+        "claudeReview.contextMeter.contextWindow": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "description": "Context window size in tokens. 0 = estimate (1,000,000 for [1m] models or once usage exceeds 200K, otherwise 200,000)."
+        },
+        "claudeReview.notifyOnChanges": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a notification (once per Claude session) when Claude changes files, with a button to open the Changes view."
+        },
+        "claudeReview.isolateClaudeChat": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Keep Claude Code chat tabs in their own editor group (like Copilot Chat): the group is locked so files always open in another group, and any file that lands there is moved out. Adds the Claude chat to `#workbench.editor.autoLockGroups#`."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "typecheck": "tsc -p . --noEmit",
+    "test:unit": "node scripts/build.mjs --tests && node --test out/test/unit/",
+    "test:integration": "node scripts/build.mjs && node scripts/build.mjs --tests && node out/test/integration/runTest.js",
+    "check:no-network": "node scripts/check-no-network.mjs",
+    "check": "npm run typecheck && npm run build && npm run check:no-network && npm run test:unit",
+    "package": "npm run check && vsce package --no-dependencies",
+    "sbom": "cyclonedx-npm --omit dev --output-format JSON --output-file sbom.cdx.json"
+  },
+  "devDependencies": {
+    "@cyclonedx/cyclonedx-npm": "6.0.1",
+    "@types/mocha": "10.0.10",
+    "@types/node": "20.19.43",
+    "@types/vscode": "1.96.0",
+    "@vscode/test-electron": "3.1.0",
+    "@vscode/vsce": "4.1.0",
+    "esbuild": "0.28.2",
+    "mocha": "12.0.3",
+    "typescript": "5.9.3"
+  }
+}

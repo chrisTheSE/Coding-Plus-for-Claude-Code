@@ -1,0 +1,11 @@
+{
+  "name": "coding-plus-for-claude-code",
+  "owner": { "name": "Coding Plus for Claude Code contributors" },
+  "plugins": [
+    {
+      "name": "coding-plus-for-claude-code",
+      "source": "./claude-plugin",
+      "description": "Local-only audit + review hooks for the Coding Plus for Claude Code VS Code extension."
+    }
+  ]
+}
