@@ -1,0 +1,94 @@
+name: Release
+on:
+  push:
+    tags: ['v*.*.*']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # create the GitHub Release
+      id-token: write       # build provenance attestation
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm audit signatures
+      - name: Check version matches tag
+        run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+      - run: npm run typecheck && npm run build && npm run check:no-network && npm run test:unit
+      - run: git diff --exit-code -- claude-plugin/relay.js
+      - name: Package VSIX
+        run: npx vsce package --no-dependencies -o "coding-plus-for-claude-code-${GITHUB_REF_NAME}.vsix"
+      - name: SBOM (CycloneDX)
+        run: npx cyclonedx-npm --omit dev --output-format JSON --output-file "coding-plus-for-claude-code-${GITHUB_REF_NAME}.cdx.json"
+      - name: Checksums
+        run: sha256sum *.vsix *.cdx.json dist/relay.js > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            *.vsix
+            *.cdx.json
+      - uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
+        with:
+          files: |
+            *.vsix
+            *.cdx.json
+            SHA256SUMS.txt
+          generate_release_notes: true
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vsix
+          path: '*.vsix'
+
+  # Optional public publishing. Enable by setting the repository variable
+  # PUBLISH_MARKETPLACE=true and creating a Trusted Publishing policy (this repo,
+  # this workflow file, environment "marketplace") on your Marketplace publisher.
+  # No long-lived token is stored. See docs/PUBLISHING.md.
+  publish-marketplace:
+    needs: build
+    if: vars.PUBLISH_MARKETPLACE == 'true'
+    runs-on: ubuntu-latest
+    environment: marketplace   # add required reviewers to this environment
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Publish to VS Code Marketplace (OIDC trusted publishing)
+        run: npx vsce publish --no-dependencies --oidc
+
+  publish-openvsx:
+    needs: build
+    if: vars.PUBLISH_OPENVSX == 'true'
+    runs-on: ubuntu-latest
+    environment: openvsx
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - name: Publish to Open VSX
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: npx --yes ovsx publish --no-dependencies -p "$OVSX_PAT"

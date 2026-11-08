@@ -1,0 +1,6 @@
+{
+  "name": "coding-plus-for-claude-code",
+  "version": "0.1.0",
+  "description": "Local-only hooks for Coding Plus for Claude Code: records tool calls and file snapshots to a local hash-chained audit log for inline diff review, and blocks access to sensitive files. No network access.",
+  "license": "MIT"
+}

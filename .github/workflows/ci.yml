@@ -1,0 +1,38 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm audit signatures
+      - run: npm run typecheck
+      - run: npm run build
+      - name: No-network / no-eval / no-shell check on shipped bundles
+        run: npm run check:no-network
+      - name: Committed plugin relay matches the build (reproducibility)
+        shell: bash
+        run: git diff --exit-code -- claude-plugin/relay.js
+      - run: npm run test:unit
+      - name: Integration tests (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run test:integration
+      - name: Integration tests
+        if: runner.os != 'Linux'
+        run: npm run test:integration
