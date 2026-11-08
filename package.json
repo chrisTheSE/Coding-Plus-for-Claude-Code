@@ -536,10 +536,9 @@
     "check:no-network": "node scripts/check-no-network.mjs",
     "check": "npm run typecheck && npm run build && npm run check:no-network && npm run test:unit",
     "package": "npm run check && vsce package --no-dependencies",
-    "sbom": "cyclonedx-npm --omit dev --output-format JSON --output-file sbom.cdx.json"
+    "sbom": "npm sbom --sbom-format cyclonedx --omit dev --package-lock-only > sbom.cdx.json"
   },
   "devDependencies": {
-    "@cyclonedx/cyclonedx-npm": "6.0.1",
     "@types/mocha": "10.0.10",
     "@types/node": "20.19.43",
     "@types/vscode": "1.96.0",
@@ -548,5 +547,9 @@
     "esbuild": "0.28.2",
     "mocha": "12.0.3",
     "typescript": "5.9.3"
+  },
+  "overrides": {
+    "minimatch": "^11.0.5",
+    "glob": "^14.0.4"
   }
 }
