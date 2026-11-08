@@ -11,10 +11,13 @@ async function main(): Promise<void> {
   const extensionTestsPath = path.resolve(__dirname, 'suite/index.js');
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'crc-ws-'));
   const dataHome = fs.mkdtempSync(path.join(os.tmpdir(), 'crc-data-'));
+  // VS Code creates a Unix socket inside its user-data dir; macOS limits socket paths to
+  // ~104 characters, which the default ".vscode-test/user-data" path exceeds on CI runners.
+  const userData = fs.mkdtempSync(path.join(process.platform === 'win32' ? os.tmpdir() : '/tmp', 'crc-ud-'));
   await runTests({
     extensionDevelopmentPath,
     extensionTestsPath,
-    launchArgs: [workspace, '--disable-extensions', '--disable-workspace-trust'],
+    launchArgs: [workspace, `--user-data-dir=${userData}`, '--disable-extensions', '--disable-workspace-trust'],
     extensionTestsEnv: { CLAUDE_REVIEW_HOME: dataHome, CRC_TEST_WORKSPACE: workspace },
   });
 }
